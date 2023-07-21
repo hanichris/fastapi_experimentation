@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Providing additional information and validation for parameters.
+
+Using `Ellipsis` to denote a required parameter.
+"""
+from fastapi import FastAPI, Query
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get('/items/')
+async def read_items(q: Annotated[str, Query(min_length=3)]):
+    results = {'items': [{'item_id': 'Foo'}, {'item_id': 'Bar'}]}
+    if q:
+        results.update({'q': q})
+    return results
+
