@@ -11,7 +11,7 @@ from pydantic import BaseModel
 #GLOBAL VARIABLES FOR CONFIGURATION
 SECRET_KEY = "b918a4fc2fde1f2c67a59048fd7cd3ef247b70358efc82550828db3b323e4bd0"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 301
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 fake_users_db = {
@@ -93,4 +93,35 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         raise credentials_exception
     return user
 
+async def get_current_active_user(
+        current_user: Annotated[User, Depends(get_current_user)]):
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail='Inactive user')
+    return current_user
+
+
+@app.post('/token', response_model=Token)
+async def login_for_access_token(
+        form_data = Annotated[OAuth2PasswordRequestForm, Depends()]):
+    print(f'Obtained form data: {form_data}')
+    user = authenicate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Incorrect username or password',
+                headers={'WWW-Authenticate': 'Bearer'})
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+            data={'sub': user.username}, expires_delta=acess_token_expires)
+    return {'access_token': access_token, 'token_type': 'bearer'}
+
+@app.get('/users/me', response_model=User)
+async def read_users_me(
+        current_user: Annotated[User, Depends(get_current_active_user)]):
+    return current_user
+
+@app.get('/users/me/items')
+async def read_own_items(
+        current_user: Annotated[User, Depends(get_current_user)]):
+    return [{'item_id': 'Foo', 'owner': current_user.username}]
 
