@@ -84,7 +84,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-        print(f'Payload (jwt.decode()): {payload}')
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
@@ -102,9 +101,8 @@ async def get_current_active_user(
 
 @app.post('/token', response_model=Token)
 async def login_for_access_token(
-        form_data = Annotated[OAuth2PasswordRequestForm, Depends()]):
-    print(f'Obtained form data: {form_data}')
-    user = authenicate_user(fake_users_db, form_data.username, form_data.password)
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -112,7 +110,7 @@ async def login_for_access_token(
                 headers={'WWW-Authenticate': 'Bearer'})
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-            data={'sub': user.username}, expires_delta=acess_token_expires)
+            data={'sub': user.username}, expires_delta=access_token_expires)
     return {'access_token': access_token, 'token_type': 'bearer'}
 
 @app.get('/users/me', response_model=User)
