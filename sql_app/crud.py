@@ -14,7 +14,7 @@ def get_user_by_email(db: Session, email: str):
     return db.execute(select(User).filter_by(email=email)).first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.execute(select(User).offset(skip).limit(limit)).all()
+    return db.execute(select(User).offset(skip).limit(limit)).scalars().all()
 
 def create_user(db: Session, user: UserCreate):
     fake_hashed_password = f'{user.password}notreallyhashed'
@@ -26,7 +26,7 @@ def create_user(db: Session, user: UserCreate):
 
 
 def get_items(db: Session, skip: int = 0, limit: int = 100):
-    return db.execute(select(Item).offset(skip).limit(limit)).all()
+    return db.execute(select(Item).offset(skip).limit(limit)).scalars().all()
 
 def create_user_item(db: Session, item: ItemCreate, user_id: int):
     db_item = Item(**item.dict(), owner_id=user_id)
